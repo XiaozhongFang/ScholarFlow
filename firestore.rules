@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner(docData) {
+      return isAuthenticated() && request.auth.uid == docData.ownerId;
+    }
+
+    function isAuthor(docData) {
+      return isAuthenticated() && request.auth.uid == docData.userId;
+    }
+
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidPaper(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             (data.doi == null || data.doi is string) &&
+             (data.pdfUrl == null || data.pdfUrl is string);
+    }
+
+    function isValidAnnotation(data) {
+      return data.type in ['highlight', 'underline', 'text', 'image', 'drawing'] &&
+             data.pageNumber is number && data.pageNumber >= 1;
+    }
+
+    function isValidNote(data) {
+      return data.content is string && data.content.size() < 100000;
+    }
+
+    function isValidComment(data) {
+      return data.content is string && data.content.size() > 0 && data.content.size() < 2000;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    // Papers
+    match /papers/{paperId} {
+      allow read: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || exists(/databases/$(database)/documents/sharedReadings/$(paperId)));
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid && isValidPaper(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid && isValidPaper(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+
+      // Annotations
+      match /annotations/{annotationId} {
+        allow read: if isAuthenticated() && (get(/databases/$(database)/documents/papers/$(paperId)).data.ownerId == request.auth.uid || exists(/databases/$(database)/documents/sharedReadings/$(paperId)));
+        allow create: if isAuthenticated() && get(/databases/$(database)/documents/papers/$(paperId)).data.ownerId == request.auth.uid && isValidAnnotation(request.resource.data);
+        allow update: if isAuthenticated() && get(/databases/$(database)/documents/papers/$(paperId)).data.ownerId == request.auth.uid && isValidAnnotation(request.resource.data);
+        allow delete: if isAuthenticated() && get(/databases/$(database)/documents/papers/$(paperId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // Notes
+    match /notes/{noteId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || exists(/databases/$(database)/documents/sharedReadings/$(resource.data.paperId)));
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidNote(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidNote(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Shared Readings
+    match /sharedReadings/{sharedId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.sharedBy == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.sharedBy == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.sharedBy == request.auth.uid;
+
+      // Comments
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidComment(request.resource.data);
+        allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      }
+    }
+
+    // Users (Public Profile)
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+  }
+}

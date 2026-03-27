@@ -1,0 +1,5 @@
+{
+  "name": "ScholarFlow - 精读文献助手",
+  "description": "ScholarFlow 是一款专为学术研究设计的精读文献应用。支持文献管理、PDF 深度编辑（高亮、划线、笔记）、AI 智能问答与翻译，以及支持 LaTeX 的专业学术笔记系统。支持社区分享与协作精读。",
+  "requestFramePermissions": []
+}

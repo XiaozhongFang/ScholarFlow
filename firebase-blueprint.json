@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "Paper": {
+      "title": "Paper",
+      "description": "A research paper or literature entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "authors": { "type": "string" },
+        "doi": { "type": "string" },
+        "pdfUrl": { "type": "string" },
+        "citation": { "type": "string" },
+        "category": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "ownerId"]
+    },
+    "Annotation": {
+      "title": "Annotation",
+      "description": "An annotation on a PDF page",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "paperId": { "type": "string" },
+        "userId": { "type": "string" },
+        "pageNumber": { "type": "number" },
+        "type": { "type": "string", "enum": ["highlight", "underline", "text", "image", "drawing"] },
+        "content": { "type": "string" },
+        "position": { "type": "object" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["paperId", "userId", "type", "pageNumber"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "A detailed note linked to a paper",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "paperId": { "type": "string" },
+        "userId": { "type": "string" },
+        "content": { "type": "string", "description": "Markdown content with LaTeX support" },
+        "linkedAnnotationId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["paperId", "userId", "content"]
+    },
+    "SharedReading": {
+      "title": "SharedReading",
+      "description": "A shared version of a paper's intensive reading",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "paperId": { "type": "string" },
+        "originalOwnerId": { "type": "string" },
+        "sharedBy": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["paperId", "sharedBy"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a shared reading",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sharedReadingId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sharedReadingId", "userId", "content"]
+    }
+  },
+  "firestore": {
+    "/papers/{paperId}": {
+      "schema": "Paper",
+      "description": "Collection of research papers"
+    },
+    "/papers/{paperId}/annotations/{annotationId}": {
+      "schema": "Annotation",
+      "description": "Annotations for a specific paper"
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Detailed notes linked to papers"
+    },
+    "/sharedReadings/{sharedId}": {
+      "schema": "SharedReading",
+      "description": "Publicly shared intensive readings"
+    },
+    "/sharedReadings/{sharedId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on shared readings"
+    }
+  }
+}
